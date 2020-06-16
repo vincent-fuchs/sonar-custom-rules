@@ -29,8 +29,8 @@ public class LogExceptionsCorrectlyCheck extends IssuableSubscriptionVisitor {
         TypeTree caughtExceptionType=catchBlock.parameter().type();
 
         if(caughtExceptionType.toString().equals("Exception")){
-            System.out.println("need to check this block");
-            System.out.println(catchBlock);
+
+            String exceptionVariableName=catchBlock.parameter().simpleName().name();
 
             List<StatementTree> catchBlockContent=catchBlock.block().body();
 
@@ -46,7 +46,7 @@ public class LogExceptionsCorrectlyCheck extends IssuableSubscriptionVisitor {
 
                 Arguments arguments=parent.arguments();
 
-                boolean foundExceptionAsParam=arguments.stream().filter(arg -> arg.is(Kind.IDENTIFIER)).filter(arg -> arg.toString().equals("e")).findAny().isPresent();
+                boolean foundExceptionAsParam=arguments.stream().filter(arg -> arg.is(Kind.IDENTIFIER)).filter(arg -> arg.toString().equals(exceptionVariableName)).findAny().isPresent();
 
                 if(!foundExceptionAsParam){
                     reportIssue(parent, "When logging an exception at error level, make sure you use a signature that preserves stacktrace");

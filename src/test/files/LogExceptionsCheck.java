@@ -25,5 +25,15 @@ class A {
 
             log.error("some exception ! "+e);
         }
+
+        try{
+            throw new Exception("some exception");
+        }
+        catch(Exception myException){ // with an exception not named "e"
+
+            log.error("some exception ! "+myException); // Noncompliant
+
+            log.error("some exception ! ",myException);
+        }
     }
 }
