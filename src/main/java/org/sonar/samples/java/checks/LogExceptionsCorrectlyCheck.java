@@ -1,6 +1,7 @@
 package org.sonar.samples.java.checks;
 
 import com.google.common.collect.ImmutableList;
+import org.sonar.check.Priority;
 import org.sonar.check.Rule;
 import org.sonar.plugins.java.api.IssuableSubscriptionVisitor;
 import org.sonar.plugins.java.api.tree.*;
@@ -9,7 +10,12 @@ import org.sonar.plugins.java.api.tree.Tree.Kind;
 import java.util.List;
 
 
-@Rule(key = "LogExceptionsCorrectlyRule")
+@Rule(
+    key = "LogExceptionsCorrectlyRule",
+    name = "Logging correctly an exception requires to pass the exception as a parameter",
+    description = "By not passing the exception as a parameter, it's very likely that we'll lose some important information when it gets logged",
+    priority = Priority.BLOCKER,
+    tags = {"bug"})
 public class LogExceptionsCorrectlyCheck extends IssuableSubscriptionVisitor {
 
     private static List<String> LOGGER_NAMES= ImmutableList.of("log","LOG","logger","LOGGER");
@@ -41,7 +47,11 @@ public class LogExceptionsCorrectlyCheck extends IssuableSubscriptionVisitor {
 
         Arguments arguments=errorLog.arguments();
 
-        boolean foundExceptionAsParam=arguments.stream().filter(arg -> arg.is(Kind.IDENTIFIER)).filter(arg -> arg.toString().equals(exceptionVariableName)).findAny().isPresent();
+        boolean foundExceptionAsParam=arguments.stream()
+                        .filter(arg -> arg.is(Kind.IDENTIFIER))
+                        .filter(arg -> arg.toString().equals(exceptionVariableName))
+                        .findAny()
+                        .isPresent();
 
         if(!foundExceptionAsParam){
             reportIssue(errorLog, "When logging an exception at error level, make sure you use a signature that preserves stacktrace");
