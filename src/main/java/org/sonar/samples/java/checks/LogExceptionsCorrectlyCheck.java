@@ -7,7 +7,6 @@ import org.sonar.plugins.java.api.tree.*;
 import org.sonar.plugins.java.api.tree.Tree.Kind;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 
 @Rule(key = "LogExceptionsCorrectlyRule")
@@ -20,7 +19,6 @@ public class LogExceptionsCorrectlyCheck extends IssuableSubscriptionVisitor {
         return ImmutableList.of(Kind.CATCH);
     }
 
-
     @Override
     public void visitNode(Tree tree) {
 
@@ -30,27 +28,23 @@ public class LogExceptionsCorrectlyCheck extends IssuableSubscriptionVisitor {
 
             String exceptionVariableName=catchBlock.parameter().simpleName().name();
 
-            List<MethodInvocationTree> errorLogStatements = catchBlock.block().body().stream()
+           catchBlock.block().body().stream()
                 .filter(statement -> isAlog(statement))
                 .filter(statement -> isAnError(statement))
-                .map(statement -> toMethodInvocationTree(statement))
-                .collect(Collectors.toList());
+                .forEach(statement -> reportIssueIfRequired(statement,exceptionVariableName));
+        }
+    }
 
+    private void reportIssueIfRequired(StatementTree statement,String exceptionVariableName) {
 
-            for(MethodInvocationTree errorLog : errorLogStatements){
+        MethodInvocationTree errorLog=toMethodInvocationTree(statement);
 
-                Arguments arguments=errorLog.arguments();
+        Arguments arguments=errorLog.arguments();
 
-                boolean foundExceptionAsParam=arguments.stream().filter(arg -> arg.is(Kind.IDENTIFIER)).filter(arg -> arg.toString().equals(exceptionVariableName)).findAny().isPresent();
+        boolean foundExceptionAsParam=arguments.stream().filter(arg -> arg.is(Kind.IDENTIFIER)).filter(arg -> arg.toString().equals(exceptionVariableName)).findAny().isPresent();
 
-                if(!foundExceptionAsParam){
-                    reportIssue(errorLog, "When logging an exception at error level, make sure you use a signature that preserves stacktrace");
-                }
-
-                System.out.println(arguments);
-
-            }
-
+        if(!foundExceptionAsParam){
+            reportIssue(errorLog, "When logging an exception at error level, make sure you use a signature that preserves stacktrace");
         }
     }
 
@@ -67,13 +61,7 @@ public class LogExceptionsCorrectlyCheck extends IssuableSubscriptionVisitor {
         MethodInvocationTree methodCall=(MethodInvocationTree)expression.expression();
         MemberSelectExpressionTree memberSelectExpressionTree=(MemberSelectExpressionTree)methodCall.methodSelect();
 
-        if(memberSelectExpressionTree.identifier().name().equals("error")){
-            return true;
-        }
-        else{
-            return false;
-        }
-
+        return memberSelectExpressionTree.identifier().name().equals("error");
     }
 
     private boolean isAlog(StatementTree statement) {
@@ -92,9 +80,7 @@ public class LogExceptionsCorrectlyCheck extends IssuableSubscriptionVisitor {
                     if(memberSelectExpressionTree.expression().is(Kind.IDENTIFIER)){
                         IdentifierTree methodCallidentifier=(IdentifierTree)memberSelectExpressionTree.expression();
 
-                        if(LOGGER_NAMES.contains(methodCallidentifier.name())){
-                            return true;
-                        }
+                        return LOGGER_NAMES.contains(methodCallidentifier.name());
                     }
                 }
             }
@@ -102,5 +88,4 @@ public class LogExceptionsCorrectlyCheck extends IssuableSubscriptionVisitor {
 
         return false;
     }
-
 }
