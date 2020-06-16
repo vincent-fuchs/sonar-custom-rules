@@ -15,7 +15,7 @@ import java.util.List;
     name = "Logging correctly an exception requires to pass the exception as a parameter",
     description = "By not passing the exception as a parameter, it's very likely that we'll lose some important information when it gets logged",
     priority = Priority.BLOCKER,
-    tags = {"bug"})
+    tags = {"error-handling"})
 public class LogExceptionsCorrectlyCheck extends IssuableSubscriptionVisitor {
 
     private static List<String> LOGGER_NAMES= ImmutableList.of("log","LOG","logger","LOGGER");

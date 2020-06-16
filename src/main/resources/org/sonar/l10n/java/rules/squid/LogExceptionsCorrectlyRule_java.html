@@ -1,0 +1,25 @@
+<p>This rule detects non proper exception logging</p>
+<h2>Noncompliant Code Example</h2>
+<pre>
+
+        try{
+            throw new Exception("some exception");
+        }
+        catch(Exception e){
+            log.error("some exception !");
+
+            log.error("some exception ! "+e);
+        }
+
+</pre>
+<h2>Compliant Solution</h2>
+<pre>
+        try{
+            throw new Exception("some exception");
+        }
+        catch(Exception e){
+            log.error("some exception ! ",e);
+
+            log.info("some exception at info level! "); // ok, because at info level
+        }
+</pre>
