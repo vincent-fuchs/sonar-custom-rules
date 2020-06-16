@@ -26,51 +26,39 @@ public class LogExceptionsCorrectlyCheck extends IssuableSubscriptionVisitor {
 
         CatchTree catchBlock = (CatchTree) tree;
 
-        TypeTree caughtExceptionType=catchBlock.parameter().type();
-
-        if(caughtExceptionType.toString().equals("Exception")){
+        if(catchBlock.parameter().type().toString().equals("Exception")){
 
             String exceptionVariableName=catchBlock.parameter().simpleName().name();
 
-            List<StatementTree> catchBlockContent=catchBlock.block().body();
+            List<MethodInvocationTree> errorLogStatements = catchBlock.block().body().stream()
+                .filter(statement -> isAlog(statement))
+                .filter(statement -> isAnError(statement))
+                .map(statement -> toMethodInvocationTree(statement))
+                .collect(Collectors.toList());
 
-            List<MemberSelectExpressionTree> errorLogStatements=catchBlockContent.stream()
-                    .filter(statement -> isAlog(statement))
-                    .filter(statement -> isAnError(statement))
-                    .map(statement -> toMemberSelectExpressionTree(statement) )
-                    .collect(Collectors.toList());
 
-            for(MemberSelectExpressionTree error : errorLogStatements){
+            for(MethodInvocationTree errorLog : errorLogStatements){
 
-                MethodInvocationTree parent= (MethodInvocationTree) error.parent();
-
-                Arguments arguments=parent.arguments();
+                Arguments arguments=errorLog.arguments();
 
                 boolean foundExceptionAsParam=arguments.stream().filter(arg -> arg.is(Kind.IDENTIFIER)).filter(arg -> arg.toString().equals(exceptionVariableName)).findAny().isPresent();
 
                 if(!foundExceptionAsParam){
-                    reportIssue(parent, "When logging an exception at error level, make sure you use a signature that preserves stacktrace");
+                    reportIssue(errorLog, "When logging an exception at error level, make sure you use a signature that preserves stacktrace");
                 }
 
                 System.out.println(arguments);
 
             }
 
-
-            System.out.println(errorLogStatements.size()+" log statement(s) found");
-
         }
-        else{
-            System.out.println("no worries - caught exception is of type "+caughtExceptionType.toString());
-        }
-
     }
 
-    private MemberSelectExpressionTree toMemberSelectExpressionTree(StatementTree statement) {
+    private MethodInvocationTree toMethodInvocationTree(StatementTree statement) {
 
         ExpressionStatementTree expression=(ExpressionStatementTree)statement;
         MethodInvocationTree methodCall=(MethodInvocationTree)expression.expression();
-        return (MemberSelectExpressionTree)methodCall.methodSelect();
+        return (MethodInvocationTree)methodCall.methodSelect().parent();
     }
 
     private boolean isAnError(StatementTree statement) {
