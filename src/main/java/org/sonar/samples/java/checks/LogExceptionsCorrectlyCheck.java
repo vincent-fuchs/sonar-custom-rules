@@ -34,11 +34,27 @@ public class LogExceptionsCorrectlyCheck extends IssuableSubscriptionVisitor {
 
             List<StatementTree> catchBlockContent=catchBlock.block().body();
 
-            List errorLogStatements=catchBlockContent.stream()
+            List<MemberSelectExpressionTree> errorLogStatements=catchBlockContent.stream()
                     .filter(statement -> isAlog(statement))
                     .filter(statement -> isAnError(statement))
                     .map(statement -> toMemberSelectExpressionTree(statement) )
                     .collect(Collectors.toList());
+
+            for(MemberSelectExpressionTree error : errorLogStatements){
+
+                MethodInvocationTree parent= (MethodInvocationTree) error.parent();
+
+                Arguments arguments=parent.arguments();
+
+                boolean foundExceptionAsParam=arguments.stream().filter(arg -> arg.is(Kind.IDENTIFIER)).filter(arg -> arg.toString().equals("e")).findAny().isPresent();
+
+                if(!foundExceptionAsParam){
+                    reportIssue(parent, "When logging an exception at error level, make sure you use a signature that preserves stacktrace");
+                }
+
+                System.out.println(arguments);
+
+            }
 
 
             System.out.println(errorLogStatements.size()+" log statement(s) found");
